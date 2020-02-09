@@ -1,10 +1,10 @@
-use coi::{Container, Error, Inject, Provide};
+use coi::{Inject, Provide};
 use mobc_postgres::{
     mobc::{Connection, Error as MobcError, Manager, Pool},
     PgConnectionManager,
 };
-use std::sync::Arc;
 
+#[derive(Inject)]
 pub struct PostgresPool<T>(Pool<PgConnectionManager<T>>)
 where
     PgConnectionManager<T>: Manager;
@@ -23,8 +23,8 @@ where
     }
 }
 
-impl<T> Inject for PostgresPool<T> where PgConnectionManager<T>: Manager {}
-
+#[derive(Provide)]
+#[provides(PostgresPool<T> with PostgresPool(self.0.clone()))]
 pub struct PostgresPoolProvider<T>(Pool<PgConnectionManager<T>>)
 where
     PgConnectionManager<T>: Manager;
@@ -35,21 +35,5 @@ where
 {
     pub fn new(pool: Pool<PgConnectionManager<T>>) -> Self {
         Self(pool)
-    }
-}
-
-impl<T> Provide for PostgresPoolProvider<T>
-where
-    PgConnectionManager<T>: Manager,
-{
-    type Output = PostgresPool<T>;
-
-    fn provide(&self, _: &Container) -> Result<Arc<PostgresPool<T>>, Error> {
-        Ok(Arc::new(PostgresPool(self.0.clone())))
-    }
-
-    #[cfg(feature = "debug")]
-    fn dependencies(&self) -> Vec<&'static str> {
-        vec![]
     }
 }
