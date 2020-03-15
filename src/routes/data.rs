@@ -3,8 +3,7 @@ use actix_web::{
     web::{self, HttpResponse, ServiceConfig},
     Responder,
 };
-use coi::inject;
-use std::sync::Arc;
+use coi_actix_web::inject;
 
 #[inject]
 async fn get(

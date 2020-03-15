@@ -475,11 +475,10 @@ dependencies = [
 [[package]]
 name = "coi"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eac83614b5cdba6729d930850148dcb23e776a505df4e08560f074f661c49b86"
 dependencies = [
  "coi-derive",
  "petgraph",
+ "rustc-hash",
  "thiserror",
 ]
 
@@ -490,6 +489,7 @@ dependencies = [
  "actix-rt",
  "actix-web",
  "async-trait",
+ "coi",
  "coi-actix-web",
  "env_logger",
  "futures",
@@ -503,9 +503,9 @@ dependencies = [
 [[package]]
 name = "coi-actix-web"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15b421909b6df3f4c88201e887c4bd6eed082cb2f21060bf62e1ca63509e94e5"
 dependencies = [
+ "actix-http",
+ "actix-service",
  "actix-web",
  "coi",
  "coi-actix-web-derive",
@@ -516,8 +516,6 @@ dependencies = [
 [[package]]
 name = "coi-actix-web-derive"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f2390bb2b3f8d0f7d3a87c65c2f716fdb07ea528d073db39d944a6b6efa824b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -527,8 +525,6 @@ dependencies = [
 [[package]]
 name = "coi-derive"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d78f65b753ef7d7ee3a1c361b048eaa30c0b793bb831ad8b6cde78891b48453d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1418,6 +1414,12 @@ name = "rustc-demangle"
 version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c691c0e608126e00913e33f0ccf3727d5fc84573623b8d65b2df340b5201783"
+
+[[package]]
+name = "rustc-hash"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "ryu"

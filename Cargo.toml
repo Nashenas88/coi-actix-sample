@@ -13,7 +13,8 @@ publish = false
 actix-rt = "1.0.0"
 actix-web = "2.0.0"
 async-trait = "0.1.24"
-coi = { package = "coi-actix-web", version = "0.4.0" }
+coi = "0.8"
+coi-actix-web = "0.4"
 env_logger = "0.7.1"
 futures = "0.3.4"
 log = "0.4.8"
@@ -25,3 +26,7 @@ thiserror = "1.0.10"
 [features]
 default = []
 debug = ["coi/debug"]
+
+[patch.crates-io]
+coi = { path = "../coi", version = "0.8.0" }
+coi-actix-web = { path = "../coi-actix-web", version = "0.4.0"}

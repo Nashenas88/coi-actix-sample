@@ -26,9 +26,9 @@ async fn main() -> Result<(), String> {
     let pool_provider = PostgresPoolProvider::new(pool);
 
     let container = container! {
-        pool => pool_provider.singleton,
-        service => ServiceProvider.scoped,
-        repository => RepositoryProvider.scoped,
+        pool => pool_provider; singleton,
+        service => ServiceProvider; scoped,
+        repository => RepositoryProvider; scoped,
     };
 
     #[cfg(feature = "debug")]
