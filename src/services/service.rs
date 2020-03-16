@@ -10,9 +10,9 @@ pub trait IService: Inject {
 }
 
 #[derive(Inject)]
-#[provides(pub dyn IService with Service::new(repository))]
+#[coi(provides pub dyn IService with Service::new(repository))]
 struct Service {
-    #[inject]
+    #[coi(inject)]
     repository: Arc<dyn IRepository>,
 }
 

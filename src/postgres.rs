@@ -24,7 +24,7 @@ where
 }
 
 #[derive(Provide)]
-#[provides(PostgresPool<T> with PostgresPool(self.0.clone()))]
+#[coi(provides PostgresPool<T> with PostgresPool(self.0.clone()))]
 pub struct PostgresPoolProvider<T>(Pool<PgConnectionManager<T>>)
 where
     PgConnectionManager<T>: Manager;

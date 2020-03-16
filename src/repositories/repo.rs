@@ -28,9 +28,9 @@ pub trait IRepository: Inject {
 }
 
 #[derive(Inject)]
-#[provides(pub dyn IRepository with Repository::new(pool))]
+#[coi(provides pub dyn IRepository with Repository::new(pool))]
 struct Repository {
-    #[inject]
+    #[coi(inject)]
     pool: Arc<PostgresPool<NoTls>>,
 }
 

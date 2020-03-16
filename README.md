@@ -35,4 +35,21 @@ cargo run --release
 And visit http://localhost:8000/data
 
 You should see something like the following if you've visited the above url in firefox:
-![](data.png)
+![{
+    0: {
+        id: 1,
+        name: "Paul"
+    },
+    1: {
+        id: 2,
+        name: "Peter"
+    },
+    2: {
+        id: 3,
+        name: "Santiago"
+    },
+    3: {
+        id: 4,
+        name: "Oliver"
+    }
+}](readme_assets/data.png)

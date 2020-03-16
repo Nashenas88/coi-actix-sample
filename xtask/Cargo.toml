@@ -5,7 +5,9 @@ authors = ["Paul Daniel Faria <Nashenas88@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
-structopt = "0.3.8"
+structopt = "0.3"
 rs-docker = "0.0.58"
+postgres = "0.17"
+thiserror = "1.0"
 
 [workspace]
