@@ -471,9 +471,9 @@ dependencies = [
 
 [[package]]
 name = "coi"
-version = "0.9.2"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8cb906c85b4490914c18bd878f93ad59253f495863b9da354a2ac2cf95059ed"
+checksum = "bde92023816d3bf6633673ee1ce5e2d8ae724c6a1f5990ce40c364c02889878d"
 dependencies = [
  "coi-derive",
  "petgraph",
@@ -501,9 +501,9 @@ dependencies = [
 
 [[package]]
 name = "coi-actix-web"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86f63d39d1f39a8cec9e38b5774c9976aef6b65ec85425de30a627f713712c58"
+checksum = "5cdefcc29e580f4a35ad61eee338abd40d44a28325f76a9575cc34d7792aa5b7"
 dependencies = [
  "actix-http",
  "actix-service",
@@ -516,9 +516,9 @@ dependencies = [
 
 [[package]]
 name = "coi-actix-web-derive"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5088a81b3822948b58a7d279f995a459d211a5fcd91371407157239fba23264a"
+checksum = "5f03549f142137906bfdbfdc48d93de7293338927baa91e9147f57f6b9f880b1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -527,9 +527,9 @@ dependencies = [
 
 [[package]]
 name = "coi-derive"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df5e42d87ddc69c382f7a68bd71431969c9b15017676bbbc6fda97bf82d601e1"
+checksum = "00069026ef32ab93e3b2263ed19bac4336ea63b710b14767a6db75eefc8a4652"
 dependencies = [
  "proc-macro2",
  "quote",
