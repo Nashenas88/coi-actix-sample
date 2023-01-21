@@ -1,22 +1,21 @@
-use crate::{models::data::Data, postgres::PostgresPool, repositories::error::Error};
+use crate::models::data::Data;
+use crate::postgres::PostgresPool;
+use crate::repositories::error::Error;
 use async_trait::async_trait;
 use coi::Inject;
 use mobc_postgres::tokio_postgres::NoTls;
-use serde::Deserialize;
-use serde_tokio_postgres::from_row;
 use std::sync::Arc;
 
-#[derive(Deserialize)]
 pub struct DbData {
     id: i64,
     name: String,
 }
 
-impl Into<Data> for DbData {
-    fn into(self) -> Data {
+impl From<DbData> for Data {
+    fn from(db_data: DbData) -> Data {
         Data {
-            id: self.id,
-            name: self.name,
+            id: db_data.id,
+            name: db_data.name,
         }
     }
 }
@@ -42,7 +41,10 @@ impl IRepository for Repository {
             .prepare("SELECT id, name FROM data WHERE id=$1::BIGINT")
             .await?;
         let row = client.query_one(&statement, &[&id]).await?;
-        let data = from_row::<DbData>(row)?;
+        let data = DbData {
+            id: row.get(0),
+            name: row.get(1),
+        };
         Ok(data)
     }
 
@@ -50,15 +52,14 @@ impl IRepository for Repository {
         let client = self.pool.get().await?;
         let statement = client.prepare("SELECT id, name FROM data LIMIT 50").await?;
         let rows = client.query(&statement, &[]).await?;
-        let names = rows
+        let data = rows
             .into_iter()
-            .map(|r| {
-                from_row::<DbData>(r)
-                    .map(Into::into)
-                    .map_err(Into::<Error>::into)
+            .map(|row| DbData {
+                id: row.get(0),
+                name: row.get(1),
             })
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(names)
+            .collect::<Vec<_>>();
+        Ok(data)
     }
 }
 

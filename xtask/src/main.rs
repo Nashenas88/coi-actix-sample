@@ -1,13 +1,10 @@
-use postgres::{Client, NoTls, Error as PostgresError};
-use rs_docker::Docker;
-use std::{
-    io::{self, ErrorKind},
-    process::{Child, Command, ExitStatus},
-    thread,
-    time::Duration,
-};
+use bollard::Docker;
+use std::io::{self, ErrorKind};
+use std::process::{Child, Command, ExitStatus};
+use std::time::Duration;
 use structopt::StructOpt;
 use thiserror::Error;
+use tokio_postgres::{connect, Client, Error as PostgresError, NoTls};
 
 #[derive(StructOpt)]
 #[structopt(
@@ -30,8 +27,11 @@ enum Step {
 
 #[derive(Error, Debug)]
 enum XtaskError {
-    #[error("Io Error")]
+    #[error("Io Error: {0}")]
     Io(#[from] io::Error),
+
+    #[error("Docker Error: {0}")]
+    Docker(#[from] bollard::errors::Error),
 
     #[error("Postgres error: {0}")]
     Postgres(#[from] PostgresError),
@@ -46,7 +46,7 @@ enum XtaskError {
 type Result<T> = std::result::Result<T, XtaskError>;
 
 const DOCKER_COMMAND: &str = "docker";
-const DOCKER_URI: &str = "unix:///var/run/docker.sock";
+// const DOCKER_URI: &str = "unix:///var/run/docker.sock";
 const DOCKER_IMAGE_NAME: &str = "coi-actix-sample-postgres";
 
 fn build_step() -> Result<()> {
@@ -54,97 +54,91 @@ fn build_step() -> Result<()> {
     success_check(command.wait(), DOCKER_COMMAND)
 }
 
-fn run_step() -> Result<()> {
-    let mut docker = Docker::connect(DOCKER_URI)?;
-    let images = docker.get_images(false)?;
-    if !images.iter().any(|i| i.Id == DOCKER_IMAGE_NAME) {
+async fn run_step() -> Result<()> {
+    let docker = Docker::connect_with_local_defaults()?;
+    let images = docker.list_images::<String>(None).await?;
+    if !images.iter().any(|i| i.id == DOCKER_IMAGE_NAME) {
         build_step()?;
     }
     let mut command = run()?;
     success_check(command.wait(), DOCKER_COMMAND)
 }
 
-fn init_step() -> Result<()> {
-    let mut docker = Docker::connect(DOCKER_URI)?;
-    let containers = docker.get_containers(false)?;
+async fn init_step() -> Result<()> {
+    let docker = Docker::connect_with_local_defaults()?;
+    let containers = docker.list_containers::<String>(None).await?;
     let container = containers
         .iter()
-        .filter(|c| c.Image == DOCKER_IMAGE_NAME)
-        .next();
+        .find(|c| c.image.as_deref() == Some(DOCKER_IMAGE_NAME));
     if let Some(_container) = container {
-        let mut client = make_client()?;
-        init_db(&mut client)
+        let mut client = make_client().await?;
+        init_db(&mut client).await
     } else {
-        let images = docker.get_images(false)?;
+        let images = docker.list_images::<String>(None).await?;
         if !images.iter().any(|i| {
-            i.RepoTags
+            i.repo_tags
                 .iter()
                 .any(|t| t == &format!("{}:latest", DOCKER_IMAGE_NAME))
         }) {
             build_step()?;
         }
         let mut command = run()?;
-        let handle = thread::spawn(move || {
-            thread::sleep(Duration::from_secs(5));
-            let mut client = make_client()?;
-            init_db(&mut client)
-        });
-        if let Err(e) = handle.join() {
+        if let Err(e) = async move {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            let mut client = make_client().await?;
+            init_db(&mut client).await
+        }
+        .await
+        {
             command.kill().map_err(Into::<XtaskError>::into)?;
-            match e.downcast::<XtaskError>() {
-                Ok(e) => Err(*e),
-                Err(e) => Err(XtaskError::Unknown(format!("{:?}", e)))
-            }
+            Err(XtaskError::Unknown(format!("{:?}", e)))
         } else {
             Ok(())
         }
     }
 }
 
-fn seed_step() -> Result<()> {
-    let mut docker = Docker::connect(DOCKER_URI)?;
-    let containers = docker.get_containers(false)?;
+async fn seed_step() -> Result<()> {
+    let docker = Docker::connect_with_local_defaults()?;
+    let containers = docker.list_containers::<String>(None).await?;
     let container = containers
         .iter()
-        .filter(|c| c.Image == DOCKER_IMAGE_NAME)
-        .next();
+        .find(|c| c.image.as_deref() == Some(DOCKER_IMAGE_NAME));
     if let Some(_container) = container {
-        let mut client = make_client()?;
-        init_db(&mut client)?;
-        seed(&mut client)
+        let mut client = make_client().await?;
+        init_db(&mut client).await?;
+        seed(&mut client).await
     } else {
-        let images = docker.get_images(false)?;
-        if !images.iter().any(|i| i.Id == DOCKER_IMAGE_NAME) {
+        let images = docker.list_images::<String>(None).await?;
+        if !images.iter().any(|i| i.id == DOCKER_IMAGE_NAME) {
             build_step()?;
         }
         let mut command = run()?;
-        let handle = thread::spawn(move || {
-            thread::sleep(Duration::from_secs(5));
-            let mut client = make_client()?;
-            init_db(&mut client)?;
-            seed(&mut client)
-        });
-        if let Err(e) = handle.join() {
+        if let Err(e) = async move {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            let mut client = make_client().await?;
+            init_db(&mut client).await?;
+            seed(&mut client).await
+        }
+        .await
+        {
             command.kill().map_err(Into::<XtaskError>::into)?;
-            match e.downcast::<XtaskError>() {
-                Ok(e) => Err(*e),
-                Err(e) => Err(XtaskError::Unknown(format!("{:?}", e)))
-            }
+            Err(e)
         } else {
             Ok(())
         }
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<()> {
+    env_logger::init();
     let step = Step::from_args();
-    if let Err(e) = match step {
+    match step {
         Step::Build => build_step(),
-        Step::Run => run_step(),
-        Step::Init => init_step(),
-        Step::Seed => seed_step(),
-    } {
-        eprintln!("Failed to run step: {}", e);
+        Step::Run => run_step().await,
+        Step::Init => init_step().await,
+        Step::Seed => seed_step().await,
     }
 }
 
@@ -190,6 +184,7 @@ fn build() -> Result<Child> {
 }
 
 fn run() -> Result<Child> {
+    println!("Running docker");
     Command::new("docker")
         .arg("run")
         .arg("-p")
@@ -200,14 +195,30 @@ fn run() -> Result<Child> {
         .map_err(Into::into)
 }
 
-fn make_client() -> Result<Client> {
-    Client::connect("host=127.0.0.1 dbname=docker port=45432 user=docker password=docker", NoTls).map_err(Into::into)
+async fn make_client() -> Result<Client> {
+    let (client, connection) = connect(
+        "host=127.0.0.1 dbname=docker port=45432 user=docker password=docker",
+        NoTls,
+    )
+    .await?;
+    tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+    Ok(client)
 }
 
-fn init_db(client: &mut Client) -> Result<()> {
-    client.batch_execute(include_str!("sql/init.sql")).map_err(Into::into)
+async fn init_db(client: &mut Client) -> Result<()> {
+    client
+        .batch_execute(include_str!("sql/init.sql"))
+        .await
+        .map_err(Into::into)
 }
 
-fn seed(client: &mut Client) -> Result<()> {
-    client.batch_execute(include_str!("sql/seed.sql")).map_err(Into::into)
+async fn seed(client: &mut Client) -> Result<()> {
+    client
+        .batch_execute(include_str!("sql/seed.sql"))
+        .await
+        .map_err(Into::into)
 }

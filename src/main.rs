@@ -28,6 +28,7 @@ async fn main() -> Result<(), String> {
     let container = container! {
         pool => pool_provider; singleton,
         service => ServiceProvider; scoped,
+        service2 => ServiceProvider; scoped,
         repository => RepositoryProvider; scoped,
     };
 
